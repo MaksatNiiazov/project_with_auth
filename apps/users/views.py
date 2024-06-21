@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView
+from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView, \
+    PasswordChangeView
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
@@ -12,7 +13,7 @@ from django.views import View
 from django.views.generic import CreateView, TemplateView
 
 from apps.users.models import User
-from .forms import SignupForm, LoginForm
+from .forms import SignupForm, LoginForm, CustomPasswordChangeForm
 from .token import account_activation_token
 
 
@@ -73,21 +74,31 @@ class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('users:login')
 
 
+class CustomPasswordChangeView(PasswordChangeView):
+    form_class = CustomPasswordChangeForm
+    template_name = 'registration/password_change_form.html'
+    success_url = reverse_lazy('password_change_done')
+
+
+class PasswordChangeDoneView(TemplateView):
+    template_name = 'registration/password_change_done.html'
+
+
 class CustomPasswordResetView(PasswordResetView):
     email_template_name = 'registration/password_reset_email.html'
     subject_template_name = 'registration/password_reset_subject.txt'
     template_name = 'registration/password_reset_form.html'
-    success_url = reverse_lazy('users:password_reset_done')
+    success_url = reverse_lazy('password_reset_done')
 
 
-class PasswordResetCompleteView(TemplateView):
+class CustomPasswordResetCompleteView(TemplateView):
     template_name = 'registration/password_reset_complete.html'
 
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     template_name = 'registration/password_reset_confirm.html'
-    success_url = reverse_lazy('users:password_reset_complete')
+    success_url = reverse_lazy('password_reset_complete')
 
 
-class PasswordResetDoneView(TemplateView):
+class CustomPasswordResetDoneView(TemplateView):
     template_name = 'registration/password_reset_done.html'
