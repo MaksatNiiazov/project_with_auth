@@ -162,8 +162,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 
-EMAIL_HOST_USER = 'niyazov37@gmail.com'
-EMAIL_HOST_PASSWORD = 'pnlj kpbg ebth qown'
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
 
 SITE_ID = int(config("SITE_ID"))
 
