@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView, \
     PasswordChangeView
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, send_mail
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
@@ -90,14 +92,49 @@ class CustomPasswordResetView(PasswordResetView):
     template_name = 'registration/password_reset_form.html'
     success_url = reverse_lazy('password_reset_done')
 
+    def form_valid(self, form):
+        email = form.cleaned_data['email']
+        user = User.objects.get(email=email)
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_password_link = reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+            reset_password_link = self.request.build_absolute_uri(reset_password_link)
 
-class CustomPasswordResetCompleteView(TemplateView):
-    template_name = 'registration/password_reset_complete.html'
+            current_site = get_current_site(self.request)
+            mail_subject = 'Reset your password'
+            message = render_to_string(self.email_template_name, {
+                'user': user,
+                'domain': current_site.domain,
+                'reset_password_link': reset_password_link,
+            })
+            email = EmailMessage(mail_subject, message, to=[email])
+            email.content_subtype = "html"
+            email.send()
+        return render(self.request, 'registration/password_reset_complete.html')
 
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     template_name = 'registration/password_reset_confirm.html'
     success_url = reverse_lazy('password_reset_complete')
+
+    def form_valid(self, form):
+        uidb64 = self.kwargs.get('uidb64')
+        token = self.kwargs.get('token')
+        User = get_user_model()
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            return super().form_valid(form)
+        else:
+            return self.handle_invalid_token()
+
+    def handle_invalid_token(self):
+        return HttpResponse('Activation link is invalid!', status=400)
 
 
 class CustomPasswordResetDoneView(TemplateView):

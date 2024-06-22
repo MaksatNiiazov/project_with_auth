@@ -67,7 +67,7 @@ class PasswordResetSerializer(serializers.Serializer):
         user = User.objects.get(email=email)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        reset_password_link = reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+        reset_password_link = reverse('api_password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
         reset_password_link = request.build_absolute_uri(reset_password_link)
 
         current_site = get_current_site(request)

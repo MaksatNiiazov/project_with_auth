@@ -1,6 +1,9 @@
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.views import PasswordResetView
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework import generics, status, serializers, permissions
@@ -15,7 +18,7 @@ from apps.users.models import User
 from apps.users.token import account_activation_token
 
 
-class RegisterView(generics.CreateAPIView):
+class RegisterAPIView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
 
@@ -41,7 +44,7 @@ class RegisterView(generics.CreateAPIView):
             raise serializers.ValidationError("Failed to create user")
 
 
-class ActivateView(APIView):
+class ActivateAPIView(APIView):
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -57,11 +60,11 @@ class ActivateView(APIView):
             return Response({'error': 'Activation link is invalid!'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CustomTokenObtainPairView(TokenObtainPairView):
+class CustomTokenObtainPairAPIView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
-class LogoutView(generics.GenericAPIView):
+class LogoutAPIView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         try:
             refresh_token = request.data["refresh"]
@@ -72,7 +75,7 @@ class LogoutView(generics.GenericAPIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class PasswordResetView(generics.GenericAPIView):
+class CustomPasswordResetAPIView(generics.GenericAPIView):
     serializer_class = PasswordResetSerializer
 
     def post(self, request, *args, **kwargs):
@@ -82,7 +85,7 @@ class PasswordResetView(generics.GenericAPIView):
         return Response({"message": "Password reset link has been sent to your email."}, status=status.HTTP_200_OK)
 
 
-class PasswordResetConfirmView(generics.GenericAPIView):
+class CustomPasswordResetConfirmAPIView(generics.GenericAPIView):
     serializer_class = PasswordResetConfirmSerializer
 
     def post(self, request, *args, **kwargs):
@@ -92,7 +95,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
 
 
-class ChangePasswordView(generics.UpdateAPIView):
+class CustomPasswordChangeAPIView(generics.UpdateAPIView):
     serializer_class = ChangePasswordSerializer
     model = User
     permission_classes = (permissions.IsAuthenticated,)
